@@ -1,5 +1,22 @@
-// TODO: Add an accumulator/calculator for the input strings to do basic
-// arithmetic.
+function calculator(str) {
+	if (str.trim() === '') return 0;
+	var no_empty = function(x) { return x.trim() !== ''; };
+	var to_num = function(x) { return Number.parseFloat(x); };
+	var numbers = str.split(/[^0-9\.]/).filter(no_empty).map(to_num);
+	var ops = str.split(/[0-9\.]+/).filter(no_empty);
+	return Math.round(numbers.reduce(function(x, y) {
+		return accumulator(x, y, ops.shift());
+	})*100)/100;
+}
+
+function accumulator(l, r, op) {
+	switch(op) {
+		case '+': return l + r;
+		case '-': return l - r;
+		default: return 0;
+	}
+	return 0;
+}
 
 (function() {
 	var d = document;
@@ -25,7 +42,6 @@
 
 	var inputs = [].slice.call(document.querySelectorAll("input"))
 		.filter(function(x) { return x.type === 'text'; });
-	console.log(inputs);
 
 	forEach(inputs, function(idx, item) {
 
@@ -39,26 +55,36 @@
 
 		item.addEventListener('keydown', function(ev) {
 			// Allow numbers:
-			if (ev.keyCode > 47 && ev.keyCode < 58) {
+			if (!ev.shiftKey && ev.keyCode > 47 && ev.keyCode < 58) {
 				return true;
 			}
 
-			console.log(ev.code + ": " + ev.keyCode);
-
 			switch (ev.keyCode) {
 				case 9: // Tab
-					inputs[(idx+1)%inputs.length].focus();
-					return false;
+					if (ev.shiftKey)
+						inputs[Math.abs(idx-1)%inputs.length].focus();
+					else
+						inputs[(idx+1)%inputs.length].focus();
+					break;
 				case 82: // KeyR = reload
 					return false;
-				case 187: // Equals
-					item.value = item.value.trim() === '' ? 0 : item.value;
-					item.value = (Number.parseInt(item.value) + 1);
-					return false;
+				case 187: // Equals or +
+					if (ev.shiftKey) { 
+						if (item.value.length > 0 && !isNaN(Number(item.value[item.value.length-1]))) {
+							return true;
+						}
+					} else {
+						item.value = calculator(item.value);
+						item.focus();
+					}
+					break;
 				case 189: // -
-					item.value = item.value.trim() === '' ? 0 : item.value;
-					item.value = (Number.parseInt(item.value) - 1);
-					return false;
+					if (!ev.shiftKey &&
+							item.value.length > 0 &&
+							!isNaN(Number(item.value[item.value.length-1]))) {
+						return true;
+					}
+					break;
 				case 37: // ArrowLeft
 					return true;
 				case 38: // ArrowUp
@@ -77,6 +103,10 @@
 					return true;
 				case 16: // ShiftLeft, ShiftRight
 					return true;
+				case 13: // Enter
+					item.value = calculator(item.value);
+					item.focus();
+					break;
 				default:
 					break;
 			}
