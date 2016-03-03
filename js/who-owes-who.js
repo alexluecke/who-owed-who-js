@@ -51,6 +51,7 @@ function accumulator(l, r, op) {
 
 		item.addEventListener('blur', function(ev) {
 			if (item.value.trim() === '') item.value = 0;
+			while (item.value.length > 1 && Number(item.value[0]) === 0) item.value = item.value.slice(1);
 		});
 
 		item.addEventListener('keydown', function(ev) {
@@ -59,15 +60,20 @@ function accumulator(l, r, op) {
 				return true;
 			}
 
+			while (item.value.length > 1 && Number(item.value[0]) === 0) item.value = item.value.slice(1);
+
+			// Return true if you want to allow character in form or to allow action.
 			switch (ev.keyCode) {
 				case 9: // Tab
-					if (ev.shiftKey)
-						inputs[Math.abs(idx-1)%inputs.length].focus();
-					else
+					if (ev.shiftKey) {
+						if (idx === 0) idx = inputs.length;
+						inputs[(idx-1)%inputs.length].focus();
+					} else {
 						inputs[(idx+1)%inputs.length].focus();
+					}
 					break;
 				case 82: // KeyR = reload
-					return false;
+					return true;
 				case 187: // Equals or +
 					if (ev.shiftKey) { 
 						if (item.value.length > 0 && !isNaN(Number(item.value[item.value.length-1]))) {
@@ -96,7 +102,7 @@ function accumulator(l, r, op) {
 				case 40: // ArrowDown
 					item.value = item.value.trim() === '' ? 0 : item.value;
 					item.value = (Number.parseInt(item.value) - 1);
-					return false;
+					break;
 				case 8: // Backspace
 					return true;
 				case 190: // .
@@ -111,6 +117,7 @@ function accumulator(l, r, op) {
 					break;
 			}
 
+			// Else prevent any other characters from being entered
 			ev.preventDefault();
 
 		});
