@@ -18,6 +18,12 @@ function accumulator(l, r, op) {
 	return 0;
 }
 
+function removeLeadingZeroes(str) {
+	while (str.length > 1 && Number(str[0]) === 0)
+		str = str.slice(1);
+	return str;
+}
+
 (function() {
 	var d = document;
 	var submits = d.querySelectorAll(".submit");
@@ -51,7 +57,7 @@ function accumulator(l, r, op) {
 
 		item.addEventListener('blur', function(ev) {
 			if (item.value.trim() === '') item.value = 0;
-			while (item.value.length > 1 && Number(item.value[0]) === 0) item.value = item.value.slice(1);
+			item.value = removeLeadingZeroes(item.value);
 		});
 
 		item.addEventListener('keydown', function(ev) {
@@ -60,7 +66,7 @@ function accumulator(l, r, op) {
 				return true;
 			}
 
-			while (item.value.length > 1 && Number(item.value[0]) === 0) item.value = item.value.slice(1);
+			item.value = removeLeadingZeroes(item.value);
 
 			// Return true if you want to allow character in form or to allow action.
 			switch (ev.keyCode) {
@@ -110,8 +116,10 @@ function accumulator(l, r, op) {
 				case 16: // ShiftLeft, ShiftRight
 					return true;
 				case 13: // Enter
-					item.value = calculator(item.value);
-					item.focus();
+					forEach(inputs, function(i, e) {
+						item.value = calculator(item.value);
+					});
+					item.parent.submit();
 					break;
 				default:
 					break;
