@@ -43,10 +43,11 @@ input {
 
 #right-column,
 #left-column {
-	overflow: scroll;
+	overflow-y: scroll;
+	overflow-x: hidden;
 	width: 50%;
-	top: 0;
 	height: 100%;
+	top: 0;
 	position: fixed;
 
 	.inner {
@@ -66,14 +67,12 @@ input {
 		display: block;
 		float: left;
 		width: 6em;
-		font-size: 1.5em;
 	}
 
 	input {
-		font-family: $font-serif;
+		font-family: $font-main;
 		font-size: 1em;
-		font-weight: 300;
-		padding: .5em;
+			padding: .5em;
 	}
 
 	hr {

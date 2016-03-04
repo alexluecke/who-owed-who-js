@@ -116,8 +116,8 @@ function removeLeadingZeroes(str) {
 				case 16: // ShiftLeft, ShiftRight
 					return true;
 				case 13: // Enter
-					forEach(inputs, function(i, e) {
-						item.value = calculator(item.value);
+					forEach(inputs, function(i, el) {
+						el.value = calculator(el.value);
 					});
 					item.parent.submit();
 					break;
@@ -197,6 +197,10 @@ function removeLeadingZeroes(str) {
 		})(sum, owed);
 
 		var out = "";
+		out += "<h1>Total</h1>";
+		out += "<p>" + sum + "</p>";
+		out += "<h1>Payment Per Person:</h1>";
+		out += "<p>" + sum/5.0 + "</p>";
 		out += "<h1>Payments:</h1>";
 		out += "<table>";
 		out += payments.map(function(x) {
