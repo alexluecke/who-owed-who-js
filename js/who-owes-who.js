@@ -1,55 +1,139 @@
-function calculator(str) {
-	if (str.trim() === '') return 0;
-	var no_empty = function(x) { return x.trim() !== ''; };
-	var to_num = function(x) { return Number.parseFloat(x); };
-	var numbers = str.split(/[^0-9\.]/).filter(no_empty).map(to_num);
-	var ops = str.split(/[0-9\.]+/).filter(no_empty);
-	return Math.round(numbers.reduce(function(x, y) {
-		return accumulator(x, y, ops.shift());
-	})*100)/100;
-}
-
-function accumulator(l, r, op) {
-	switch(op) {
-		case '+': return l + r;
-		case '-': return l - r;
-		default: return 0;
-	}
-	return 0;
-}
-
-function removeLeadingZeroes(str) {
-	while (str.length > 1 && Number(str[0]) === 0)
-		str = str.slice(1);
-	return str;
-}
-
 (function() {
-	var d = document;
-	var submits = d.querySelectorAll(".submit");
-	var output = document.getElementById('output');
 
-	var forEach = function (array, callback, scope) {
+	var self = this;
+
+	var f = {
+		adder      : function(x, y) { return x+y; },
+		descending : function(x, y) { return x.value < y.value; },
+		ascending  : function(x, y) { return x.value > y.value; },
+		no_empty   : function(x) { return x.trim() !== ''; },
+		to_float   : function(x) { return Number.parseFloat(x); },
+		type_text  : function(x) { return x.type === 'text'; },
+	};
+
+	var el = {
+		submits : document.querySelectorAll(".submit"),
+		output  : document.getElementById('output'),
+		inputs  : [].slice.call(document.querySelectorAll("input")).filter(f.type_text),
+	};
+
+	self.calc = function(str) {
+		if (str.trim() === '') return 0;
+		var numbers = str.split(/[^0-9\.]/).filter(f.no_empty).map(f.to_float);
+		var ops = str.split(/[0-9\.]+/).filter(f.no_empty);
+		return Math.round(numbers.reduce(function(x, y) {
+			return self.accumulator(x, y, ops.shift());
+		})*100)/100;
+	};
+
+	self.accumulator = function(l, r, op) {
+		switch(op) {
+			case '+': return l + r;
+			case '-': return l - r;
+			default: return 0;
+		}
+		return 0;
+	};
+
+	self.removeLeadingZeroes = function(str) {
+		while (str.length > 1 && Number(str[0]) === 0)
+			str = str.slice(1);
+		return str;
+	};
+
+	self.forEach = function (array, callback, scope) {
 		for (var i = 0, k = array.length; i < k; i++) {
 			callback.call(scope, i, array[i]);
 		}
 	};
 
-	var reset = d.getElementById("reset");
-	if (reset) {
-		reset.addEventListener('click', function(ev) {
-			ev.preventDefault();
-			forEach(d.querySelectorAll("input"), function(idx, item) {
-				if (item.type === 'text') item.value = 0;
-				output.innerHTML = '';
-			});
-		});
+	self.determinePayments = function(owed) {
+		var payments = [];
+		while(owed.length > 1) {
+			var payee = owed[0];
+			var payer = owed[owed.length-1];
+
+			var payment = {
+				from: payer.name,
+				to: payee.name,
+				value: Math.round(payer.value*100)/100.0,
+			};
+
+			if (payment.value < 0) {
+				var temp = payment.to;
+				payment.to = payment.from;
+				payment.from = temp;
+				payment.value = Math.abs(payment.value);
+			}
+
+			payments.push(payment);
+
+			owed[0].value += payer.value;
+			owed.pop();
+		}
+		return payments;
 	}
 
-	var inputs = [].slice.call(document.querySelectorAll("input"))
-		.filter(function(x) { return x.type === 'text'; });
+	self.main = function() {
 
-	forEach(inputs, function(idx, item) {
+		var values = [];
+
+		self.forEach(document.querySelectorAll("input"), function(idx, item) {
+			if (item.type === 'text') {
+				values.push({
+					name: item.name,
+					value: isNaN(Number(item.value)) ? 0 : Number(item.value),
+				});
+			}
+		});
+
+		values.sort(f.descending);
+
+		var sum = values
+			.map(function(obj) { return obj.value })
+			.reduce(f.adder);
+
+		var avg = sum / values.length;
+
+		var payments = self.determinePayments(values.map(function(x) {
+			return { name: x.name, value: avg - x.value, };
+		}));
+
+		// TODO: change hard-coded 5.0 to dynamic follow, probably from the number
+		// of text inputs.
+
+		var out = "";
+		out += "<h1>Total</h1>";
+		out += "<p>$" + sum + "</p>";
+		out += "<h1>Payment Per Person:</h1>";
+		out += "<p>$" + sum/5.0 + "</p>";
+		out += "<h1>Payments:</h1>";
+		out += "<table>";
+		out += payments.map(function(x) {
+			var ret = "<tr>"
+				+ "<td>" + x.from + "</td>"
+				+ "<td>&rarr;</td>"
+				+ "<td>" + x.to + ":</td>"
+				+ "<td class='payment'><b>"
+				+ "$" + x.value + "</b></td>"
+				+ "</tr>";
+			return ret;
+		}).join(' ');
+		out += "</table>";
+
+		el.output.innerHTML = out;
+
+	}
+
+	self.forEach(el.submits, function (i, el) {
+		el.addEventListener('click', function(ev) {
+			ev.preventDefault();
+			self.main();
+			return false;
+		});
+	});
+
+	self.forEach(el.inputs, function(idx, item) {
 
 		item.addEventListener('focus', function(ev) {
 			if (Number(item.value) === 0) item.value = '';
@@ -57,7 +141,7 @@ function removeLeadingZeroes(str) {
 
 		item.addEventListener('blur', function(ev) {
 			if (item.value.trim() === '') item.value = 0;
-			item.value = removeLeadingZeroes(item.value);
+			item.value = self.removeLeadingZeroes(item.value);
 		});
 
 		item.addEventListener('keydown', function(ev) {
@@ -66,16 +150,16 @@ function removeLeadingZeroes(str) {
 				return true;
 			}
 
-			item.value = removeLeadingZeroes(item.value);
+			item.value = self.removeLeadingZeroes(item.value);
 
 			// Return true if you want to allow character in form or to allow action.
 			switch (ev.keyCode) {
 				case 9: // Tab
 					if (ev.shiftKey) {
-						if (idx === 0) idx = inputs.length;
-						inputs[(idx-1)%inputs.length].focus();
+						if (idx === 0) idx = el.inputs.length;
+						el.inputs[(idx-1)%el.inputs.length].focus();
 					} else {
-						inputs[(idx+1)%inputs.length].focus();
+						el.inputs[(idx+1)%el.inputs.length].focus();
 					}
 					break;
 				case 82: // KeyR = reload
@@ -86,7 +170,7 @@ function removeLeadingZeroes(str) {
 							return true;
 						}
 					} else {
-						item.value = calculator(item.value);
+						item.value = self.calc(item.value);
 						item.focus();
 					}
 					break;
@@ -116,8 +200,8 @@ function removeLeadingZeroes(str) {
 				case 16: // ShiftLeft, ShiftRight
 					return true;
 				case 13: // Enter
-					forEach(inputs, function(i, el) {
-						el.value = calculator(el.value);
+					self.forEach(el.inputs, function(i, el) {
+						el.value = self.calc(el.value);
 					});
 					// TODO: Maybe I could add a history of submissions for form
 					// reseting?
@@ -126,96 +210,8 @@ function removeLeadingZeroes(str) {
 				default:
 					break;
 			}
-
 			// Else prevent any other characters from being entered
 			ev.preventDefault();
-
 		});
 	});
-
-	forEach(submits, function (i, el) {
-		el.addEventListener('click', function(ev) {
-			ev.preventDefault();
-			the_thing();
-			return false;
-		});
-	});
-
-	function the_thing() {
-
-		var reverse = function(x, y) { return x.value < y.value; };
-		var inorder = function(x, y) { return x.value > y.value; };
-		var values = [];
-
-		forEach(d.querySelectorAll("input"), function(idx, item) {
-			if (item.type === 'text') {
-				values.push({
-					name: item.name,
-					value: isNaN(Number(item.value)) ? 0 : Number(item.value),
-				});
-			}
-		});
-
-		values.sort(reverse);
-
-		var sum = values
-			.map(function(obj) { return obj.value })
-			.reduce(function(x, y) { return x+y; });
-
-		var avg = sum / values.length;
-
-		var payments = (function(total, owed) {
-			var payments = [];
-			while(owed.length > 1) {
-				var payee = owed[0];
-				var payer = owed[owed.length-1];
-
-				var payment = {
-					from: payer.name,
-					to: payee.name,
-					value: Math.round(payer.value*100)/100.0,
-				};
-
-				if (payment.value < 0) {
-					var temp = payment.to;
-					payment.to = payment.from;
-					payment.from = temp;
-					payment.value = Math.abs(payment.value);
-				}
-
-				payments.push(payment);
-
-				owed[0].value += payer.value;
-				owed.pop();
-			}
-			return payments;
-		})(sum, values.map(function(x) {
-			return { name: x.name, value: avg - x.value, };
-		}));
-
-		// TODO: change hard-coded 5.0 to dynamic follow, probably from the number
-		// of text inputs.
-
-		var out = "";
-		out += "<h1>Total</h1>";
-		out += "<p>$" + sum + "</p>";
-		out += "<h1>Payment Per Person:</h1>";
-		out += "<p>$" + sum/5.0 + "</p>";
-		out += "<h1>Payments:</h1>";
-		out += "<table>";
-		out += payments.map(function(x) {
-			var ret = "<tr>"
-				+ "<td>" + x.from + "</td>"
-				+ "<td>&rarr;</td>"
-				+ "<td>" + x.to + ":</td>"
-				+ "<td class='payment'><b>"
-				+ "$" + x.value + "</b></td>"
-				+ "</tr>";
-			return ret;
-		}).join(' ');
-		out += "</table>";
-
-		output.innerHTML = out;
-
-	}
 })();
