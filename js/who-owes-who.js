@@ -12,9 +12,10 @@
 	};
 
 	var el = {
-		submits : document.querySelectorAll(".submit"),
+		submits : document.querySelectorAll('.submit'),
 		output  : document.getElementById('output'),
-		inputs  : [].slice.call(document.querySelectorAll("input")).filter(f.type_text),
+		form    : document.forms['the-form'],
+		inputs  : [].slice.call(document.querySelectorAll('input')).filter(f.type_text),
 	};
 
 	self.calc = function(str) {
@@ -72,19 +73,17 @@
 			owed.pop();
 		}
 		return payments;
-	}
+	};
 
 	self.main = function() {
 
 		var values = [];
 
-		self.forEach(document.querySelectorAll("input"), function(idx, item) {
-			if (item.type === 'text') {
-				values.push({
-					name: item.name,
-					value: isNaN(Number(item.value)) ? 0 : Number(item.value),
-				});
-			}
+		self.forEach(el.inputs, function(idx, item) {
+			values.push({
+				name: item.name,
+				value: isNaN(Number(item.value)) ? 0 : Number(item.value),
+			});
 		});
 
 		values.sort(f.descending);
@@ -110,20 +109,18 @@
 		out += "<h1>Payments:</h1>";
 		out += "<table>";
 		out += payments.map(function(x) {
-			var ret = "<tr>"
+			return "<tr>"
 				+ "<td>" + x.from + "</td>"
 				+ "<td>&rarr;</td>"
 				+ "<td>" + x.to + ":</td>"
 				+ "<td class='payment'><b>"
 				+ "$" + x.value + "</b></td>"
 				+ "</tr>";
-			return ret;
 		}).join(' ');
 		out += "</table>";
-
 		el.output.innerHTML = out;
 
-	}
+	};
 
 	self.forEach(el.submits, function (i, el) {
 		el.addEventListener('click', function(ev) {
@@ -133,85 +130,90 @@
 		});
 	});
 
-	self.forEach(el.inputs, function(idx, item) {
+	self.init = function() {
+		self.forEach(el.inputs, function(idx, item) {
 
-		item.addEventListener('focus', function(ev) {
-			if (Number(item.value) === 0) item.value = '';
-		});
+			item.addEventListener('focus', function(ev) {
+				if (Number(item.value) === 0) item.value = '';
+			});
 
-		item.addEventListener('blur', function(ev) {
-			if (item.value.trim() === '') item.value = 0;
-			item.value = self.removeLeadingZeroes(item.value);
-		});
+			item.addEventListener('blur', function(ev) {
+				if (item.value.trim() === '') item.value = 0;
+				item.value = self.removeLeadingZeroes(item.value);
+			});
 
-		item.addEventListener('keydown', function(ev) {
-			// Allow numbers:
-			if (!ev.shiftKey && ev.keyCode > 47 && ev.keyCode < 58) {
-				return true;
-			}
-
-			item.value = self.removeLeadingZeroes(item.value);
-
-			// Return true if you want to allow character in form or to allow action.
-			switch (ev.keyCode) {
-				case 9: // Tab
-					if (ev.shiftKey) {
-						if (idx === 0) idx = el.inputs.length;
-						el.inputs[(idx-1)%el.inputs.length].focus();
-					} else {
-						el.inputs[(idx+1)%el.inputs.length].focus();
-					}
-					break;
-				case 82: // KeyR = reload
+			item.addEventListener('keydown', function(ev) {
+				// Allow numbers:
+				if (!ev.shiftKey && ev.keyCode > 47 && ev.keyCode < 58) {
 					return true;
-				case 187: // Equals or +
-					if (ev.shiftKey) { 
-						if (item.value.length > 0 && !isNaN(Number(item.value[item.value.length-1]))) {
+				}
+
+				item.value = self.removeLeadingZeroes(item.value);
+
+				// Return true if you want to allow character in form or to allow action.
+				switch (ev.keyCode) {
+					case 9: // Tab
+						if (ev.shiftKey) {
+							if (idx === 0) idx = el.inputs.length;
+							el.inputs[(idx-1)%el.inputs.length].focus();
+						} else {
+							el.inputs[(idx+1)%el.inputs.length].focus();
+						}
+						break;
+					case 82: // KeyR = reload
+						return true;
+					case 187: // Equals or +
+						if (ev.shiftKey) { 
+							if (item.value.length > 0 && !isNaN(Number(item.value[item.value.length-1]))) {
+								return true;
+							}
+						} else {
+							item.value = self.calc(item.value);
+							item.focus();
+						}
+						break;
+					case 189: // -
+						if (!ev.shiftKey &&
+								item.value.length > 0 &&
+								!isNaN(Number(item.value[item.value.length-1]))) {
 							return true;
 						}
-					} else {
-						item.value = self.calc(item.value);
-						item.focus();
-					}
-					break;
-				case 189: // -
-					if (!ev.shiftKey &&
-							item.value.length > 0 &&
-							!isNaN(Number(item.value[item.value.length-1]))) {
+						break;
+					case 37: // ArrowLeft
 						return true;
-					}
-					break;
-				case 37: // ArrowLeft
-					return true;
-				case 38: // ArrowUp
-					item.value = item.value.trim() === '' ? 0 : item.value;
-					item.value = (Number.parseInt(item.value) + 1);
-					break;
-				case 39: // ArrowRight
-					return true;
-				case 40: // ArrowDown
-					item.value = item.value.trim() === '' ? 0 : item.value;
-					item.value = (Number.parseInt(item.value) - 1);
-					break;
-				case 8: // Backspace
-					return true;
-				case 190: // .
-					return true;
-				case 16: // ShiftLeft, ShiftRight
-					return true;
-				case 13: // Enter
-					self.forEach(el.inputs, function(i, el) {
-						el.value = self.calc(el.value);
-					});
-					// TODO: Maybe I could add a history of submissions for form
-					// reseting?
-					item.parent.submit();
-					break;
-				default:
-					break;
-			}
-			// Else prevent any other characters from being entered
-			ev.preventDefault();
+					case 38: // ArrowUp
+						item.value = item.value.trim() === '' ? 0 : item.value;
+						item.value = (Number.parseInt(item.value) + 1);
+						break;
+					case 39: // ArrowRight
+						return true;
+					case 40: // ArrowDown
+						item.value = item.value.trim() === '' ? 0 : item.value;
+						item.value = (Number.parseInt(item.value) - 1);
+						break;
+					case 8: // Backspace
+						return true;
+					case 190: // .
+						return true;
+					case 16: // ShiftLeft, ShiftRight
+						return true;
+					case 13: // Enter
+						self.forEach(el.inputs, function(i, el) {
+							el.value = self.calc(el.value);
+						});
+						// TODO: Maybe I could add a history of submissions for form
+						// reseting?
+						el.submits[0].click();
+						break;
+					default:
+						break;
+				}
+				// Else prevent any other characters from being entered
+				ev.preventDefault();
+			});
 		});
-	});
+	};
+
+	self.init();
+
 })();
