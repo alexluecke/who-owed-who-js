@@ -77,16 +77,12 @@
 
 	self.main = function() {
 
-		var values = [];
-
-		self.forEach(el.inputs, function(idx, item) {
-			values.push({
-				name: item.name,
-				value: isNaN(Number(item.value)) ? 0 : Number(item.value),
-			});
-		});
-
-		values.sort(f.descending);
+		var values = el.inputs.map(function(x) {
+			return {
+				name: x.name, 
+				value: isNaN(Number.parseFloat(x.value)) ? 0 : Number.parseFloat(x.value),
+			};
+		}).sort(f.descending);
 
 		var sum = values
 			.map(function(obj) { return obj.value })
@@ -98,14 +94,11 @@
 			return { name: x.name, value: avg - x.value, };
 		}));
 
-		// TODO: change hard-coded 5.0 to dynamic follow, probably from the number
-		// of text inputs.
-
 		var out = "";
 		out += "<h1>Total</h1>";
 		out += "<p>$" + sum + "</p>";
 		out += "<h1>Payment Per Person:</h1>";
-		out += "<p>$" + sum/5.0 + "</p>";
+		out += "<p>$" + sum/values.length + "</p>";
 		out += "<h1>Payments:</h1>";
 		out += "<table>";
 		out += payments.map(function(x) {
@@ -143,22 +136,22 @@
 			});
 
 			item.addEventListener('keydown', function(ev) {
+
 				// Allow numbers:
-				if (!ev.shiftKey && ev.keyCode > 47 && ev.keyCode < 58) {
+				if (!ev.shiftKey && ev.keyCode > 47 && ev.keyCode < 58)
 					return true;
-				}
 
 				item.value = self.removeLeadingZeroes(item.value);
 
-				// Return true if you want to allow character in form or to allow action.
+				// Return true if you want to allow character or action in form.
 				switch (ev.keyCode) {
 					case 9: // Tab
-						if (ev.shiftKey) {
-							if (idx === 0) idx = el.inputs.length;
-							el.inputs[(idx-1)%el.inputs.length].focus();
-						} else {
+						if (ev.shiftKey)
+							el.inputs[
+								((idx === 0 ? el.inputs.length : 0) - 1) % el.inputs.length
+							].focus();
+						else
 							el.inputs[(idx+1)%el.inputs.length].focus();
-						}
 						break;
 					case 82: // KeyR = reload
 						return true;
