@@ -115,15 +115,16 @@
 
 	};
 
-	self.forEach(el.submits, function (i, el) {
-		el.addEventListener('click', function(ev) {
-			ev.preventDefault();
-			self.main();
-			return false;
-		});
-	});
-
 	self.init = function() {
+
+		self.forEach(el.submits, function (i, el) {
+			el.addEventListener('click', function(ev) {
+				ev.preventDefault();
+				self.main();
+				return false;
+			});
+		});
+
 		self.forEach(el.inputs, function(idx, item) {
 
 			item.addEventListener('focus', function(ev) {
