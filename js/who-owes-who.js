@@ -119,6 +119,8 @@ function removeLeadingZeroes(str) {
 					forEach(inputs, function(i, el) {
 						el.value = calculator(el.value);
 					});
+					// TODO: Maybe I could add a history of submissions for form
+					// reseting?
 					item.parent.submit();
 					break;
 				default:
@@ -162,13 +164,6 @@ function removeLeadingZeroes(str) {
 
 		var avg = sum / values.length;
 
-		var owed = values.map(function(x) {
-			return {
-				name: x.name,
-				value: avg - x.value,
-			};
-		});
-
 		var payments = (function(total, owed) {
 			var payments = [];
 			while(owed.length > 1) {
@@ -194,13 +189,16 @@ function removeLeadingZeroes(str) {
 				owed.pop();
 			}
 			return payments;
-		})(sum, owed);
+		})(sum, values.map(function(x) {
+			return { name: x.name, value: avg - x.value, };
+		}));
+
 
 		var out = "";
 		out += "<h1>Total</h1>";
-		out += "<p>" + sum + "</p>";
+		out += "<p>$" + sum + "</p>";
 		out += "<h1>Payment Per Person:</h1>";
-		out += "<p>" + sum/5.0 + "</p>";
+		out += "<p>$" + sum/5.0 + "</p>";
 		out += "<h1>Payments:</h1>";
 		out += "<table>";
 		out += payments.map(function(x) {
