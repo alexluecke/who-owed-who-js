@@ -193,6 +193,8 @@ function removeLeadingZeroes(str) {
 			return { name: x.name, value: avg - x.value, };
 		}));
 
+		// TODO: change hard-coded 5.0 to dynamic follow, probably from the number
+		// of text inputs.
 
 		var out = "";
 		out += "<h1>Total</h1>";
