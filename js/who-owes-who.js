@@ -19,12 +19,17 @@
 	};
 
 	self.calc = function(str) {
+		// TODO: I think this removes leading negative sign.
 		if (str.trim() === '') return 0;
 		var numbers = str.split(/[^0-9\.]/).filter(f.no_empty).map(f.to_float);
 		var ops = str.split(/[0-9\.]+/).filter(f.no_empty);
 		return Math.round(numbers.reduce(function(x, y) {
 			return self.accumulator(x, y, ops.shift());
 		})*100)/100;
+	};
+
+	self.makeMoneyVal = function(val) {
+		return Math.round(val*100)/100;
 	};
 
 	self.accumulator = function(l, r, op) {
@@ -36,7 +41,7 @@
 		return 0;
 	};
 
-	self.removeLeadingZeroes = function(str) {
+	self.rmLeading0s = function(str) {
 		while (str.length > 1 && Number(str[0]) === 0)
 			str = str.slice(1);
 		return str;
@@ -79,7 +84,7 @@
 
 		var values = el.inputs.map(function(x) {
 			return {
-				name: x.name, 
+				name: x.name,
 				value: isNaN(Number.parseFloat(x.value)) ? 0 : Number.parseFloat(x.value),
 			};
 		}).sort(f.descending);
@@ -88,7 +93,7 @@
 			.map(function(obj) { return obj.value })
 			.reduce(f.adder);
 
-		var avg = sum / values.length;
+		var avg = self.makeMoneyVal(sum / values.length);
 
 		var payments = self.determinePayments(values.map(function(x) {
 			return { name: x.name, value: avg - x.value, };
@@ -98,7 +103,7 @@
 		out += "<h1>Total</h1>";
 		out += "<p>$" + sum + "</p>";
 		out += "<h1>Payment Per Person:</h1>";
-		out += "<p>$" + sum/values.length + "</p>";
+		out += "<p>$" + avg + "</p>";
 		out += "<h1>Payments:</h1>";
 		out += "<table>";
 		out += payments.map(function(x) {
@@ -125,24 +130,25 @@
 			});
 		});
 
-		self.forEach(el.inputs, function(idx, item) {
+		self.forEach(el.inputs, function(idx, it) {
 
-			item.addEventListener('focus', function(ev) {
-				if (Number(item.value) === 0) item.value = '';
+			it.addEventListener('focus', function(ev) {
+				if (Number(it.value) === 0) it.value = '';
 			});
 
-			item.addEventListener('blur', function(ev) {
-				if (item.value.trim() === '') item.value = 0;
-				item.value = self.removeLeadingZeroes(item.value);
+			it.addEventListener('blur', function(ev) {
+				it.value = (it.value.trim() === '') ? 0 : self.rmLeading0s(it.value);
 			});
 
-			item.addEventListener('keydown', function(ev) {
+			it.addEventListener('keydown', function(ev) {
+
+				// TODO: need to allow leading negative sign
 
 				// Allow numbers:
 				if (!ev.shiftKey && ev.keyCode > 47 && ev.keyCode < 58)
 					return true;
 
-				item.value = self.removeLeadingZeroes(item.value);
+				it.value = self.rmLeading0s(it.value);
 
 				// Return true if you want to allow character or action in form.
 				switch (ev.keyCode) {
@@ -157,33 +163,33 @@
 					case 82: // KeyR = reload
 						return true;
 					case 187: // Equals or +
-						if (ev.shiftKey) { 
-							if (item.value.length > 0 && !isNaN(Number(item.value[item.value.length-1]))) {
+						if (ev.shiftKey) {
+							if (it.value.length > 0 && !isNaN(Number(it.value[it.value.length-1]))) {
 								return true;
 							}
 						} else {
-							item.value = self.calc(item.value);
-							item.focus();
+							it.value = self.calc(it.value);
+							it.focus();
 						}
 						break;
 					case 189: // -
 						if (!ev.shiftKey &&
-								item.value.length > 0 &&
-								!isNaN(Number(item.value[item.value.length-1]))) {
+								it.value.length > 0 &&
+								!isNaN(Number(it.value[it.value.length-1]))) {
 							return true;
 						}
 						break;
 					case 37: // ArrowLeft
 						return true;
 					case 38: // ArrowUp
-						item.value = item.value.trim() === '' ? 0 : item.value;
-						item.value = (Number.parseInt(item.value) + 1);
+						it.value = it.value.trim() === '' ? 0 : Number.parseFloat(it.value) + 1.0;
+						it.value = self.makeMoneyVal(it.value);
 						break;
 					case 39: // ArrowRight
 						return true;
 					case 40: // ArrowDown
-						item.value = item.value.trim() === '' ? 0 : item.value;
-						item.value = (Number.parseInt(item.value) - 1);
+						it.value = it.value.trim() === '' ? 0 : Number.parseFloat(it.value) - 1.0;
+						it.value = self.makeMoneyVal(it.value);
 						break;
 					case 8: // Backspace
 						return true;
@@ -195,8 +201,6 @@
 						self.forEach(el.inputs, function(i, el) {
 							el.value = self.calc(el.value);
 						});
-						// TODO: Maybe I could add a history of submissions for form
-						// reseting?
 						el.submits[0].click();
 						break;
 					default:
