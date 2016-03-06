@@ -109,7 +109,7 @@
 		out += payments.map(function(x) {
 			return "<tr>"
 				+ "<td>" + x.from + "</td>"
-				+ "<td>&rarr;</td>"
+				+ "<td class='arrow'>&rarr;</td>"
 				+ "<td>" + x.to + ":</td>"
 				+ "<td class='payment'><b>"
 				+ "$" + x.value + "</b></td>"
