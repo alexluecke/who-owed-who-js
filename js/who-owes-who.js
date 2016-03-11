@@ -62,7 +62,7 @@
 			var payment = {
 				from: payer.name,
 				to: payee.name,
-				value: Math.round(payer.value*100)/100.0,
+				value: self.makeMoneyVal(Number.parseFloat(payer.value))
 			};
 
 			if (payment.value < 0) {
